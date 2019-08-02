@@ -159,7 +159,7 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 			oneIngred := list[i]
 			oneIngred = strings.Trim(oneIngred, " ")
 			oneIngred = strings.ToLower(oneIngred)
-			url := fmt.Sprintf("%s/api/ingredient/%s", root, oneIngred)
+			url := fmt.Sprintf("%sapi/ingredient/%s", root, oneIngred)
 			resp, err := http.Get(url)
 			if err != nil {
 				log.Println(err)
