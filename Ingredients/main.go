@@ -10,6 +10,7 @@ import (
 	"log"
 	"net/http"
 	"strconv"
+	"strings"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -146,8 +147,41 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 		r.ParseForm()
 		barcode := r.Form["barcode"][0]
 		name := r.Form["name"][0]
-		ingred := r.Form["ingred"][0]
-		grade := "0"
+		ingred := strings.ToLower(r.Form["ingred"][0])
+		// Calculate Grade
+		list := strings.Split(ingred, ",")
+		var total int
+		for i := 0; i < len(list); i++ {
+			oneIngred := list[i]
+			oneIngred = strings.Trim(oneIngred, " ")
+			oneIngred = strings.ToLower(oneIngred)
+			url := fmt.Sprintf("%s/api/ingredient/%s", root, oneIngred)
+			resp, err := http.Get(url)
+			if err != nil {
+				log.Println(err)
+			}
+			body, er := ioutil.ReadAll(resp.Body)
+			if er != nil {
+				log.Println(er)
+			}
+
+			var tempIngred Ingredient
+			json.Unmarshal(body, &tempIngred)
+			total += tempIngred.Grade
+		}
+		var avgGrade = float64(total) / float64(len(list))
+		var grade = "uncalculated"
+		if avgGrade < -3 {
+			grade = "very bad"
+		} else if avgGrade < -1 {
+			grade = "bad"
+		} else if avgGrade < 1 {
+			grade = "neutral"
+		} else if avgGrade < 3 {
+			grade = "good"
+		} else if avgGrade < 5 {
+			grade = "very good"
+		}
 
 		// Create the food struct
 		var temp = Food{barcode, name, ingred, grade}
@@ -347,8 +381,6 @@ func deleteIngredient(w http.ResponseWriter, r *http.Request) {
 }
 
 /* To Do
-Create add ingredient admin page
-When food is created, implement the calculation for the grade of the food from ingreds
 Add restrictions that limit who can use admin pages and api
 Pathway to alert admins if ingredient does not exist
 Response from create food/ingredient methods to determine whether addition worked
