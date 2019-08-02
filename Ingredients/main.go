@@ -22,10 +22,11 @@ type DB sql.DB
 // Food is a typed struct that is used to decode and encode
 // data for http requests
 type Food struct {
-	Barcode     string `json:"barcode"`
-	Name        string `json:"title"`
-	Ingredients string `json:"ingredients"`
-	Grade       string `json:"grade"`
+	Barcode     string  `json:"barcode"`
+	Name        string  `json:"title"`
+	Ingredients string  `json:"ingredients"`
+	Grade       string  `json:"grade"`
+	NumGrade    float64 `json:"numgrade"`
 }
 
 // Ingredient is a typed struct that is used to decode and
@@ -133,7 +134,7 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 			if errMsg != nil {
 				log.Println(errMsg)
 			}
-			fmt.Fprintf(w, "%s\n%s\n%s\n%s\n", tempFood.Barcode, tempFood.Name, tempFood.Ingredients, tempFood.Grade)
+			fmt.Fprintf(w, "%s\n%s\n%s\n%s\n%.1f", tempFood.Barcode, tempFood.Name, tempFood.Ingredients, tempFood.Grade, tempFood.NumGrade)
 		}
 	}
 }
@@ -148,9 +149,11 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 		barcode := r.Form["barcode"][0]
 		name := r.Form["name"][0]
 		ingred := strings.ToLower(r.Form["ingred"][0])
+
 		// Calculate Grade
 		list := strings.Split(ingred, ",")
 		var total int
+
 		for i := 0; i < len(list); i++ {
 			oneIngred := list[i]
 			oneIngred = strings.Trim(oneIngred, " ")
@@ -184,7 +187,7 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 		}
 
 		// Create the food struct
-		var temp = Food{barcode, name, ingred, grade}
+		var temp = Food{barcode, name, ingred, grade, avgGrade}
 		body, err := json.Marshal(temp)
 		str := fmt.Sprintf("%sapi/food", root)
 		if err != nil {
@@ -194,7 +197,6 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 		if er != nil {
 			log.Println(er)
 		}
-
 	}
 }
 
@@ -238,13 +240,14 @@ func getAllFoods(w http.ResponseWriter, r *http.Request) {
 	}
 	for sel.Next() {
 		var (
-			bar   string
-			name  string
-			ins   string
-			grade string
+			bar      string
+			name     string
+			ins      string
+			grade    string
+			numgrade float64
 		)
-		sel.Scan(&bar, &name, &ins, &grade)
-		var f = Food{bar, name, ins, grade}
+		sel.Scan(&bar, &name, &ins, &grade, &numgrade)
+		var f = Food{bar, name, ins, grade, numgrade}
 		json.NewEncoder(w).Encode(f)
 	}
 }
@@ -254,14 +257,14 @@ func createFood(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	var newFood Food
 	json.NewDecoder(r.Body).Decode(&newFood)
-
+	log.Println(newFood)
 	// Set up DB query
-	stmt, err := db.Prepare("insert into food values(?, ?, ?, ?)")
+	stmt, err := db.Prepare("insert into food values(?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	// Fire query string
-	_, err = stmt.Query(newFood.Barcode, newFood.Name, newFood.Ingredients, newFood.Grade)
+	_, err = stmt.Query(newFood.Barcode, newFood.Name, newFood.Ingredients, newFood.Grade, newFood.NumGrade)
 	if err != nil {
 		log.Fatalln(err)
 	}
@@ -281,13 +284,14 @@ func getFood(w http.ResponseWriter, r *http.Request) {
 	}
 	for sel.Next() {
 		var (
-			bar   string
-			name  string
-			ins   string
-			grade string
+			bar      string
+			name     string
+			ins      string
+			grade    string
+			numgrade float64
 		)
-		sel.Scan(&bar, &name, &ins, &grade)
-		var f = Food{bar, name, ins, grade}
+		sel.Scan(&bar, &name, &ins, &grade, &numgrade)
+		var f = Food{bar, name, ins, grade, numgrade}
 		json.NewEncoder(w).Encode(f)
 	}
 }
@@ -299,22 +303,23 @@ func updateFood(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		log.Fatalln(err)
 	}
-	rem, err := db.Prepare("update food set title=?, ingredients=?, grade=? where barcode=?;")
+	rem, err := db.Prepare("update food set title=?, ingredients=?, grade=?, numgrade=? where barcode=?;")
 	if err != nil {
 		log.Fatalln(err)
 	}
 	vars := mux.Vars(r)
 	sel, err := stmt.Query(vars["bar"])
 	var (
-		bar   string
-		name  string
-		ins   string
-		grade string
+		bar      string
+		name     string
+		ins      string
+		grade    string
+		numgrade float64
 	)
 
-	sel.Scan(&bar, &name, &ins, &grade)
-	rem.Query(name, ins, grade, bar)
-	var f = Food{bar, name, ins, grade}
+	sel.Scan(&bar, &name, &ins, &grade, &numgrade)
+	rem.Query(name, ins, grade, numgrade, bar)
+	var f = Food{bar, name, ins, grade, numgrade}
 	json.NewEncoder(w).Encode(f)
 }
 
@@ -355,8 +360,9 @@ func getIngredient(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
 	stmt, err := db.Prepare("select grade from ingredients where title=?;")
 	if err != nil {
-		log.Fatalln(err)
+		log.Println(err)
 	}
+
 	vars := mux.Vars(r)
 	sel, err := stmt.Query(vars["name"])
 	if err != nil {
@@ -365,9 +371,14 @@ func getIngredient(w http.ResponseWriter, r *http.Request) {
 	var (
 		grade int
 	)
-	sel.Scan(&grade)
-	var i = Ingredient{vars["name"], grade}
-	json.NewEncoder(w).Encode(i)
+	if sel.Next() {
+		sel.Scan(&grade)
+		if err != nil {
+			log.Println(err)
+		}
+		var i = Ingredient{vars["name"], grade}
+		json.NewEncoder(w).Encode(i)
+	}
 }
 
 // Update
