@@ -79,7 +79,7 @@ func main() {
 /* Opens a connection to the database and checks if the connection is working */
 func openConn() error {
 	if db == nil {
-		tempdb, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/foodstuff")
+		tempdb, err := sql.Open("mysql", "root:ihateeirs@tcp(127.0.0.1:3306)/foodstuff")
 		if err != nil {
 			return err
 		}
