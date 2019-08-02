@@ -153,6 +153,7 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 		// Calculate Grade
 		list := strings.Split(ingred, ",")
 		var total int
+		var allFound = true
 
 		for i := 0; i < len(list); i++ {
 			oneIngred := list[i]
@@ -170,20 +171,28 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 
 			var tempIngred Ingredient
 			json.Unmarshal(body, &tempIngred)
-			total += tempIngred.Grade
+			if tempIngred.Grade == -10 {
+				total = 0
+				allFound = false
+				recordMissingIngredient(tempIngred.Name)
+			} else {
+				total += tempIngred.Grade
+			}
 		}
 		var avgGrade = float64(total) / float64(len(list))
-		var grade = "uncalculated"
-		if avgGrade < -3 {
-			grade = "very bad"
-		} else if avgGrade < -1 {
-			grade = "bad"
-		} else if avgGrade < 1 {
-			grade = "neutral"
-		} else if avgGrade < 3 {
-			grade = "good"
-		} else if avgGrade < 5 {
-			grade = "very good"
+		var grade = "missing"
+		if allFound {
+			if avgGrade < -3 {
+				grade = "very bad"
+			} else if avgGrade < -1 {
+				grade = "bad"
+			} else if avgGrade < 1 {
+				grade = "neutral"
+			} else if avgGrade < 3 {
+				grade = "good"
+			} else if avgGrade < 5 {
+				grade = "very good"
+			}
 		}
 
 		// Create the food struct
@@ -378,6 +387,9 @@ func getIngredient(w http.ResponseWriter, r *http.Request) {
 		}
 		var i = Ingredient{vars["name"], grade}
 		json.NewEncoder(w).Encode(i)
+	} else {
+		var i = Ingredient{vars["name"], -10}
+		json.NewEncoder(w).Encode(i)
 	}
 }
 
@@ -389,6 +401,15 @@ func updateIngredient(w http.ResponseWriter, r *http.Request) {
 // Delete
 func deleteIngredient(w http.ResponseWriter, r *http.Request) {
 
+}
+
+// Function used to record the name of any ingredients not currently in the ingredients table
+func recordMissingIngredient(name string) {
+	stmt, err := db.Prepare("insert into missing values(?)")
+	if err != nil {
+		log.Println(err)
+	}
+	stmt.Query(name)
 }
 
 /* To Do
