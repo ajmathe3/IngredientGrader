@@ -61,7 +61,6 @@
         
 
         <script type="application/javascript">
-            document.getElementById("test").innerHTML = document.getElementById("menu").style.display;
             document.getElementById("menuToggle").onclick = function() {
                 var ele = document.getElementById("menu"); 
                 if (ele.style.display === "block") {
@@ -71,7 +70,6 @@
                     ele.style.display = "block"; 
                     document.getElementById("main").style.width = "84%"; 
                 }
-                document.getElementById("test").innerHTML = ele.style.display;
             }
             /*document.getElementById("testJS").onclick = function() {
                 var para = document.getElementById("change")

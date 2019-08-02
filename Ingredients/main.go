@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -8,6 +9,7 @@ import (
 	"io/ioutil"
 	"log"
 	"net/http"
+	"strconv"
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/gorilla/mux"
@@ -35,6 +37,9 @@ type Ingredient struct {
 // Implements http.Handler to allow for custom 404 error page
 type foo int
 
+// Allows for dynamic absolute addresses when testing/deploying
+var root = "http://localhost:8000/"
+
 var db *sql.DB
 
 func main() {
@@ -47,6 +52,7 @@ func main() {
 
 	//endpoints for admin pages
 	router.HandleFunc("/admin/food/create", makeFood)
+	router.HandleFunc("/admin/ingredient/create", makeIngredient)
 
 	//endpoints for the api
 	router.HandleFunc("/api/food/{bar}", getFood).Methods("GET")
@@ -68,6 +74,7 @@ func main() {
 	}
 }
 
+/* Opens a connection to the database and checks if the connection is working */
 func openConn() error {
 	if db == nil {
 		tempdb, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/foodstuff")
@@ -90,23 +97,26 @@ func openConn() error {
 	return nil
 }
 
+/* Creates a custom 404 error page */
 func (m foo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("templates/notFound.html")
 	t.Execute(w, nil)
 }
 
+/* Handler function for the landing page of the site */
 func landingFunc(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("templates/index.html")
 	t.Execute(w, nil)
 }
 
+/* Retrieves food info from the database. Current implementation writes data to page */
 func handleFood(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("templates/food.html")
 		t.Execute(w, nil)
 		vals, ok := r.URL.Query()["barcode"]
 		if ok && len(vals[0]) > 0 {
-			str := fmt.Sprintf("http://localhost:8000/api/food/%s", string(vals[0]))
+			str := fmt.Sprintf("%sapi/food/%s", root, string(vals[0]))
 			resp, err := http.Get(str)
 			if err != nil {
 				log.Println(err)
@@ -127,12 +137,57 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+/* Admin page. Allows for food to be added to the database */
 func makeFood(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("templates/makeFood.html")
 		t.Execute(w, nil)
 	} else if r.Method == "POST" {
+		r.ParseForm()
+		barcode := r.Form["barcode"][0]
+		name := r.Form["name"][0]
+		ingred := r.Form["ingred"][0]
+		grade := "0"
 
+		// Create the food struct
+		var temp = Food{barcode, name, ingred, grade}
+		body, err := json.Marshal(temp)
+		str := fmt.Sprintf("%sapi/food", root)
+		if err != nil {
+			log.Println(err)
+		}
+		_, er := http.Post(str, "application/json", bytes.NewBuffer(body))
+		if er != nil {
+			log.Println(er)
+		}
+
+	}
+}
+
+func makeIngredient(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		t, _ := template.ParseFiles("templates/makeIngredient.html")
+		t.Execute(w, nil)
+	} else if r.Method == "POST" {
+		r.ParseForm()
+		name := r.Form["name"][0]
+		grade := r.Form["grade"][0]
+
+		// Create ingredient struct
+		g, e := strconv.Atoi(grade)
+		if e != nil {
+			log.Println(e)
+		}
+		var temp = Ingredient{name, g}
+		body, err := json.Marshal(temp)
+		str := fmt.Sprintf("%sapi/ingredient", root)
+		if err != nil {
+			log.Println(err)
+		}
+		_, er := http.Post(str, "application/json", bytes.NewBuffer(body))
+		if er != nil {
+			log.Println(er)
+		}
 	}
 }
 
@@ -290,3 +345,19 @@ func updateIngredient(w http.ResponseWriter, r *http.Request) {
 func deleteIngredient(w http.ResponseWriter, r *http.Request) {
 
 }
+
+/* To Do
+Create add ingredient admin page
+When food is created, implement the calculation for the grade of the food from ingreds
+Add restrictions that limit who can use admin pages and api
+Pathway to alert admins if ingredient does not exist
+Response from create food/ingredient methods to determine whether addition worked
+SQL Injection protection
+Implement and test update/delete methods for ingredients and food
+
+Edge Cases
+	Creating a food with a barcode that already exists
+	Retrieving a food with a missing barcode
+	Calculating the grade of a food with a missing ingredient
+	Creating an ingredient with a name that already exists
+*/
