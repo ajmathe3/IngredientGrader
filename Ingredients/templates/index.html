@@ -1,0 +1,83 @@
+<html>
+    <head>
+        <title>Ingredient Parser</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <style>
+            body {
+                margin : 0px;
+                background-color: #eeeeff; 
+            }
+            #banner {
+                width : 100%;
+                background-color : #aaaaff; 
+                height : 40px; 
+                border : 2px solid black; 
+                float : left;
+            }
+
+            .menu {
+                width : 15%;
+                background-color : #aaaaff; 
+                height : 100%; 
+                border : 2px solid black; 
+                border-top : 0px; 
+                border-right : 0px; 
+                display : none; 
+                float : left; 
+            }
+
+            .main {
+                width : 99%;
+                background-color: red; 
+                border-left : 2px solid black; 
+                height : 100%; 
+                float : left; 
+            }
+        </style>
+    </head>
+
+    <body>
+        <!--<p id="change">Lorem ipsum dolor sit amet, consectetur adipiscing elit, 
+            sed do eiusmod tempor incididunt ut labore et dolore magna aliqua. 
+            Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris 
+            nisi ut aliquip ex ea commodo consequat. Duis aute irure dolor in 
+            reprehenderit in voluptate velit esse cillum dolore eu fugiat nulla 
+            pariatur. Excepteur sint occaecat cupidatat non proident, sunt in 
+            culpa qui officia deserunt mollit anim id est laborum.</p>
+        <p id="test">As is the CSS</p>
+        <button id="testJS">As is JS</button>-->
+
+        <div id="banner">
+            <button id="menuToggle">Click to Toggle Menu</button>
+        </div>
+
+        <div class="menu" id="menu">
+        </div>
+
+        <div class="main" id="main">
+             <a href="/food"> Click to Go to Food!</a> 
+        </div>
+
+        
+
+        <script type="application/javascript">
+            document.getElementById("test").innerHTML = document.getElementById("menu").style.display;
+            document.getElementById("menuToggle").onclick = function() {
+                var ele = document.getElementById("menu"); 
+                if (ele.style.display === "block") {
+                    ele.style.display = "none";
+                    document.getElementById("main").style.width = "99%"; 
+                } else  if (ele.style.display === "none" || ele.style.display === "") {
+                    ele.style.display = "block"; 
+                    document.getElementById("main").style.width = "84%"; 
+                }
+                document.getElementById("test").innerHTML = ele.style.display;
+            }
+            /*document.getElementById("testJS").onclick = function() {
+                var para = document.getElementById("change")
+                para.style.color = "#0000ff"; 
+            }; */
+        </script>
+    </body>
+
+</html>

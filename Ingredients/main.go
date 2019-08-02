@@ -3,7 +3,9 @@ package main
 import (
 	"database/sql"
 	"encoding/json"
+	"fmt"
 	"html/template"
+	"io/ioutil"
 	"log"
 	"net/http"
 
@@ -30,11 +32,22 @@ type Ingredient struct {
 	Grade int    `json:"grade"`
 }
 
+// Implements http.Handler to allow for custom 404 error page
+type foo int
+
 var db *sql.DB
 
 func main() {
 	//Router to handle all routings
 	router := mux.NewRouter()
+
+	//endpoints for web pages
+	router.HandleFunc("/food", handleFood)
+	router.HandleFunc("/", landingFunc)
+
+	//endpoints for admin pages
+	router.HandleFunc("/admin/food/create", makeFood)
+
 	//endpoints for the api
 	router.HandleFunc("/api/food/{bar}", getFood).Methods("GET")
 	router.HandleFunc("/api/food/{bar}", updateFood).Methods("POST")
@@ -43,8 +56,10 @@ func main() {
 	router.HandleFunc("/api/food", createFood).Methods("POST")
 	router.HandleFunc("/api/ingredient", createIngredient).Methods("POST")
 	router.HandleFunc("/api/ingredient/{name}", getIngredient).Methods("GET")
-	router.HandleFunc("/", landingFunc).Methods("GET")
 
+	//custom 404 page
+	var m foo
+	router.NotFoundHandler = m
 	// Open and Test DB connection
 	openConn()
 
@@ -75,9 +90,50 @@ func openConn() error {
 	return nil
 }
 
-func landingFunc(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("index.html")
+func (m foo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("templates/notFound.html")
 	t.Execute(w, nil)
+}
+
+func landingFunc(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("templates/index.html")
+	t.Execute(w, nil)
+}
+
+func handleFood(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		t, _ := template.ParseFiles("templates/food.html")
+		t.Execute(w, nil)
+		vals, ok := r.URL.Query()["barcode"]
+		if ok && len(vals[0]) > 0 {
+			str := fmt.Sprintf("http://localhost:8000/api/food/%s", string(vals[0]))
+			resp, err := http.Get(str)
+			if err != nil {
+				log.Println(err)
+			}
+			defer resp.Body.Close()
+			body, errors := ioutil.ReadAll(resp.Body)
+			if errors != nil {
+				log.Println(errors)
+			}
+
+			var tempFood Food
+			errMsg := json.Unmarshal(body, &tempFood)
+			if errMsg != nil {
+				log.Println(errMsg)
+			}
+			fmt.Fprintf(w, "%s\n%s\n%s\n%s\n", tempFood.Barcode, tempFood.Name, tempFood.Ingredients, tempFood.Grade)
+		}
+	}
+}
+
+func makeFood(w http.ResponseWriter, r *http.Request) {
+	if r.Method == "GET" {
+		t, _ := template.ParseFiles("templates/makeFood.html")
+		t.Execute(w, nil)
+	} else if r.Method == "POST" {
+
+	}
 }
 
 // CRUD Operations Controllers - Food
