@@ -40,7 +40,7 @@ type Ingredient struct {
 type foo int
 
 // Allows for dynamic absolute addresses when testing/deploying
-var root = "ec2-18-224-202-131.us-east-2.compute.amazonaws.com:8000/"
+var root = "http://ec2-18-224-202-131.us-east-2.compute.amazonaws.com:8000/"
 
 var db *sql.DB
 

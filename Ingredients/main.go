@@ -159,7 +159,7 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 			oneIngred := list[i]
 			oneIngred = strings.Trim(oneIngred, " ")
 			oneIngred = strings.ToLower(oneIngred)
-			url := fmt.Sprintf("%s/api/ingredient/%s", root, oneIngred)
+			url := fmt.Sprintf("%sapi/ingredient/%s", root, oneIngred)
 			resp, err := http.Get(url)
 			if err != nil {
 				log.Println(err)
@@ -414,7 +414,6 @@ func recordMissingIngredient(name string) {
 
 /* To Do
 Add restrictions that limit who can use admin pages and api
-Pathway to alert admins if ingredient does not exist
 Response from create food/ingredient methods to determine whether addition worked
 SQL Injection protection
 Implement and test update/delete methods for ingredients and food
