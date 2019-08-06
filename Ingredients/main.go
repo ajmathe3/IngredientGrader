@@ -50,6 +50,7 @@ func main() {
 
 	//endpoints for web pages
 	router.HandleFunc("/food", handleFood)
+	router.HandleFunc("/about", handleAbout)
 	router.HandleFunc("/", landingFunc)
 
 	//endpoints for admin pages
@@ -105,9 +106,11 @@ func (m foo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t.Execute(w, nil)
 }
 
+// PUBLIC WEB PAGES
+
 /* Handler function for the landing page of the site */
 func landingFunc(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("templates/index.html")
+	t, _ := template.ParseFiles("templates/index2.html")
 	t.Execute(w, nil)
 }
 
@@ -139,6 +142,12 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func handleAbout(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("templates/about.html")
+	t.Execute(w, nil)
+}
+
+// ADMIN PAGES
 /* Admin page. Allows for food to be added to the database */
 func makeFood(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
