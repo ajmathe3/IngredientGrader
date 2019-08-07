@@ -223,24 +223,49 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 		t, _ := template.ParseFiles("templates/makeIngredient.html")
 		t.Execute(w, nil)
 	} else if r.Method == "POST" {
+		var errors []string
+
 		r.ParseForm()
 		name := r.Form["name"][0]
 		grade := r.Form["grade"][0]
+
+		//formatting stuff
+		name = strings.Trim(name, " ")
+		name = strings.ToLower(name)
+		grade = strings.Trim(grade, " ")
+
+		// Check if the name and grade fields are empty
+		if len(name) < 1 {
+			errors = append(errors, "Name Field cannot be empty|")
+		}
+		if len(grade) < 1 {
+			errors = append(errors, "Grade Field cannot be empty|")
+		}
 
 		// Create ingredient struct
 		g, e := strconv.Atoi(grade)
 		if e != nil {
 			log.Println(e)
+			errors = append(errors, "Grade could not be parsed. Check to make sure it is a number|")
 		}
-		var temp = Ingredient{name, g}
-		body, err := json.Marshal(temp)
-		str := fmt.Sprintf("%sapi/ingredient", root)
-		if err != nil {
-			log.Println(err)
+		if g < -5 || g > 5 || g%1 != 0 {
+			errors = append(errors, "The grade must be an integer between -5 and 5, inclusive|")
 		}
-		_, er := http.Post(str, "application/json", bytes.NewBuffer(body))
-		if er != nil {
-			log.Println(er)
+
+		if len(errors) == 0 {
+			var temp = Ingredient{name, g}
+			body, err := json.Marshal(temp)
+			str := fmt.Sprintf("%sapi/ingredient", root)
+			if err != nil {
+				log.Println(err)
+			}
+			_, er := http.Post(str, "application/json", bytes.NewBuffer(body))
+			if er != nil {
+				log.Println(er)
+			}
+		} else {
+			errorString := strings.Join(errors, "|")
+			log.Println(errorString)
 		}
 	}
 }
