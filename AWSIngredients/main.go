@@ -226,6 +226,7 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 	} else if r.Method == "POST" {
 		var errors []string
 
+		// Parse the frontend for the name and grade entered by the user
 		r.ParseForm()
 		name := r.Form["name"][0]
 		grade := r.Form["grade"][0]
@@ -249,8 +250,21 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 			log.Println(e)
 			errors = append(errors, "Grade could not be parsed. Check to make sure it is a number|")
 		}
+
+		// Check if the grade is in range
 		if g < -5 || g > 5 || g%1 != 0 {
 			errors = append(errors, "The grade must be an integer between -5 and 5, inclusive|")
+		}
+
+		// Check if the ingredient already exists in the database
+		stmt, err := db.Prepare("select * from ingredients where title=?;")
+		if err != nil {
+			log.Println(err)
+		}
+		_, err = stmt.Query(name)
+		if err != sql.ErrNoRows {
+			dupIngred := fmt.Sprintf("Ingredient %s already exists|", name)
+			errors = append(errors, dupIngred)
 		}
 
 		if len(errors) == 0 {
@@ -267,6 +281,7 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 		} else {
 			errorString := strings.Join(errors, "|")
 			log.Println(errorString)
+			http.Error(w, errorString, 500)
 		}
 	}
 }
