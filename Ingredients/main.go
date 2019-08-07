@@ -260,8 +260,12 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 		if err != nil {
 			log.Println(err)
 		}
-		_, err = stmt.Query(name)
-		if err != sql.ErrNoRows {
+		rows, _ := stmt.Query(name)
+		var count int
+		for rows.Next() {
+			count++
+		}
+		if count > 0 {
 			dupIngred := fmt.Sprintf("Ingredient %s already exists|", name)
 			errors = append(errors, dupIngred)
 		}
