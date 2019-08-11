@@ -137,7 +137,7 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 			// Check whether barcode is numeric
 			_, err := strconv.Atoi(string(vals[0]))
 			if err != nil {
-				errors = append(errors, "barcode must be numerical|")
+				errors = append(errors, "barcode must be numerical")
 			} else {
 				str := fmt.Sprintf("%sapi/food/%s", root, string(vals[0]))
 				resp, err := http.Get(str)
@@ -145,8 +145,8 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 					log.Println(err)
 				}
 				defer resp.Body.Close()
-				body, errors := ioutil.ReadAll(resp.Body)
-				if errors != nil {
+				body, erros := ioutil.ReadAll(resp.Body)
+				if erros != nil {
 					log.Println(errors)
 				}
 
@@ -155,54 +155,62 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 				if errMsg != nil {
 					log.Println(errMsg)
 				}
-				//fmt.Fprintf(w, "%s\n%s\n%s\n%s\n%.1f", tempFood.Barcode, tempFood.Name, tempFood.Ingredients, tempFood.Grade, tempFood.NumGrade)
 
-				// Get all the ingredient information
-				var tempList []Ingredient
-				item := tempFood.Ingredients
-				items := strings.Split(item, ",")
+				// This checks if the food has any missing ingredients
+				if tempFood.Grade == "missing" {
+					errors = append(errors, "Food has ingredients with undefined ingredients")
+				} else {
+					// Get all the ingredient information
+					var tempList []Ingredient
+					item := tempFood.Ingredients
+					items := strings.Split(item, ",")
 
-				// Create printing object struct
-				var tempPage = FoodPage{tempFood, tempList}
-				for i := 0; i < len(items); i++ {
-					inName := items[i]
-					inName = strings.ToLower(inName)
-					inName = strings.Trim(inName, " ")
+					// Create printing object struct
+					var tempPage = FoodPage{tempFood, tempList}
+					for i := 0; i < len(items); i++ {
+						inName := items[i]
+						inName = strings.ToLower(inName)
+						inName = strings.Trim(inName, " ")
 
-					ingredStr := fmt.Sprintf("%sapi/ingredient/%s", root, inName)
-					inResp, inErr := http.Get(ingredStr)
-					if inErr != nil {
-						log.Println(1, i, inName, inErr)
+						ingredStr := fmt.Sprintf("%sapi/ingredient/%s", root, inName)
+						inResp, inErr := http.Get(ingredStr)
+						if inErr != nil {
+							log.Println(1, i, inName, inErr)
+						}
+						defer inResp.Body.Close()
+						inBody, inErrors := ioutil.ReadAll(inResp.Body)
+						if inErrors != nil {
+							log.Println(2, inErrors)
+						}
+						var tempIngred Ingredient
+						inErrMsg := json.Unmarshal(inBody, &tempIngred)
+						if inErrMsg != nil {
+							log.Println(3, inErrMsg)
+						}
+						tempPage.Ingredients = append(tempPage.Ingredients, tempIngred)
 					}
-					defer inResp.Body.Close()
-					inBody, inErrors := ioutil.ReadAll(inResp.Body)
-					if inErrors != nil {
-						log.Println(2, inErrors)
+
+					// Now that we have our printing page, print it to the template
+					newT, e := template.ParseFiles("templates/food2.html")
+					if e != nil {
+						log.Println(e)
 					}
-					var tempIngred Ingredient
-					inErrMsg := json.Unmarshal(inBody, &tempIngred)
-					if inErrMsg != nil {
-						log.Println(3, inErrMsg)
-					}
-					tempPage.Ingredients = append(tempPage.Ingredients, tempIngred)
+					newT.Execute(w, tempPage)
 				}
-
-				// Now that we have our printing page, print it to the template
-				newT, e := template.ParseFiles("templates/food2.html")
-				if e != nil {
-					log.Println(e)
-				}
-				newT.Execute(w, tempPage)
 
 			}
+
 		} else if ok && len(vals[0]) == 0 {
 			// Block should be reached if barcode was not defined
-			errors = append(errors, "barcode must be defined as a numerical string|")
+			errors = append(errors, "barcode field cannot be empty")
 		}
 		// If any errors exist, return an error code and message
 		if len(errors) > 0 && ok {
-			errorString := strings.Join(errors, "|")
-			http.Error(w, errorString, 400)
+			errorTemplate, err := template.ParseFiles("templates/foodError.html")
+			if err != nil {
+				log.Println(err)
+			}
+			errorTemplate.Execute(w, errors)
 		}
 	}
 }

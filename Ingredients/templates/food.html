@@ -8,6 +8,13 @@
         <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css" integrity="sha384-ggOyR0iXCbMQv3Xipma34MD+dH/1fQ784/j6cY/iJTQUOhcWr7x9JvoRxT2MZw1T" crossorigin="anonymous">
 
         <title>Search For Foods</title>
+
+        <style>
+            .form-padding {
+                padding-left : 10px; 
+                padding-right : 10px; 
+            }
+        </style>
     </head>
 
     <body>
@@ -46,10 +53,17 @@
                 </form>
             </div>
         </nav> 
+
         <form method="get">
-            Enter Barcode: <input name="barcode" type="text">
-            <input type="submit" value="Get Data">
+            <div class="form-group form-padding">
+                <label for="barcode">Enter Barcode</label>
+                <input class="form-control" name="barcode" id="barcode" type="text" placeholder="Barcode">
+            </div>
+            <div class="form-padding">
+                <input type="submit" value="Get Data"  class="btn btn-primary btn-block form-padding">
+            </div>
         </form>
+
         <!-- Optional JavaScript -->
         <!-- jQuery first, then Popper.js, then Bootstrap JS -->
         <script src="https://code.jquery.com/jquery-3.3.1.slim.min.js" integrity="sha384-q8i/X+965DzO0rT7abK41JStQIAqVgRVzpbzo5smXKp4YfRvH+8abtTE1Pi6jizo" crossorigin="anonymous"></script>
