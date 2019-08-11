@@ -151,14 +151,18 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 				}
 
 				var tempFood Food
+				var foundFood = true
 				errMsg := json.Unmarshal(body, &tempFood)
 				if errMsg != nil {
-					log.Println(errMsg)
+					foundFood = false
 				}
 
 				// This checks if the food has any missing ingredients
 				if tempFood.Grade == "missing" {
 					errors = append(errors, "Food has ingredients with undefined ingredients")
+				} else if !foundFood {
+					foundErr := fmt.Sprintf("There is no Food associated with barcode: %s", string(vals[0]))
+					errors = append(errors, foundErr)
 				} else {
 					// Get all the ingredient information
 					var tempList []Ingredient
@@ -252,6 +256,7 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 
 		// Used to store the names of ingredients that are missing
 		var missingIngredients []string
+
 		// Calculate Grade
 		list := strings.Split(ingred, ",")
 		var total int
@@ -273,6 +278,7 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 
 			var tempIngred Ingredient
 			json.Unmarshal(body, &tempIngred)
+			log.Println(tempIngred)
 			if tempIngred.Grade == -10 {
 				total = 0
 				allFound = false

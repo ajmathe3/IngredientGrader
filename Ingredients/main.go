@@ -151,14 +151,18 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 				}
 
 				var tempFood Food
+				var foundFood = true
 				errMsg := json.Unmarshal(body, &tempFood)
 				if errMsg != nil {
-					log.Println(errMsg)
+					foundFood = false
 				}
 
 				// This checks if the food has any missing ingredients
 				if tempFood.Grade == "missing" {
 					errors = append(errors, "Food has ingredients with undefined ingredients")
+				} else if !foundFood {
+					foundErr := fmt.Sprintf("There is no Food associated with barcode: %s", string(vals[0]))
+					errors = append(errors, foundErr)
 				} else {
 					// Get all the ingredient information
 					var tempList []Ingredient
@@ -588,13 +592,10 @@ func recordMissingIngredient(name string) {
 
 /* To Do
 Add restrictions that limit who can use admin pages and api
-Response from create food/ingredient methods to determine whether addition worked
 SQL Injection protection
 Implement and test update/delete methods for ingredients and food
 
 Edge Cases
 	Creating a food with a barcode that already exists
 	Retrieving a food with a missing barcode
-	Calculating the grade of a food with a missing ingredient
-	Creating an ingredient with a name that already exists
 */
