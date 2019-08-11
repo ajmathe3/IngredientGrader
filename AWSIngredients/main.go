@@ -36,6 +36,13 @@ type Ingredient struct {
 	Grade int    `json:"grade"`
 }
 
+// FoodPage To print out both the Food Data and Ingredient Data on the
+// /food page, a specialized struct will be defined for it
+type FoodPage struct {
+	AFood       Food         `json:"food"`
+	Ingredients []Ingredient `json:"ingredients"`
+}
+
 // Implements http.Handler to allow for custom 404 error page
 type foo int
 
@@ -99,13 +106,13 @@ func openConn() error {
 	return nil
 }
 
+// PUBLIC WEB PAGES
+
 /* Creates a custom 404 error page */
 func (m foo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("templates/notFound.html")
 	t.Execute(w, nil)
 }
-
-// PUBLIC WEB PAGES
 
 /* Handler function for the landing page of the site */
 func landingFunc(w http.ResponseWriter, r *http.Request) {
@@ -116,27 +123,81 @@ func landingFunc(w http.ResponseWriter, r *http.Request) {
 /* Retrieves food info from the database. Current implementation writes data to page */
 func handleFood(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
+		vals, ok := r.URL.Query()["barcode"]
+		var errors []string
 		t, _ := template.ParseFiles("templates/food.html")
 		t.Execute(w, nil)
-		vals, ok := r.URL.Query()["barcode"]
-		if ok && len(vals[0]) > 0 {
-			str := fmt.Sprintf("%sapi/food/%s", root, string(vals[0]))
-			resp, err := http.Get(str)
-			if err != nil {
-				log.Println(err)
-			}
-			defer resp.Body.Close()
-			body, errors := ioutil.ReadAll(resp.Body)
-			if errors != nil {
-				log.Println(errors)
-			}
 
-			var tempFood Food
-			errMsg := json.Unmarshal(body, &tempFood)
-			if errMsg != nil {
-				log.Println(errMsg)
+		if ok && len(vals[0]) > 0 {
+			// Check whether barcode is numeric
+			_, err := strconv.Atoi(string(vals[0]))
+			if err != nil {
+				errors = append(errors, "barcode must be numerical|")
+			} else {
+				str := fmt.Sprintf("%sapi/food/%s", root, string(vals[0]))
+				resp, err := http.Get(str)
+				if err != nil {
+					log.Println(err)
+				}
+				defer resp.Body.Close()
+				body, errors := ioutil.ReadAll(resp.Body)
+				if errors != nil {
+					log.Println(errors)
+				}
+
+				var tempFood Food
+				errMsg := json.Unmarshal(body, &tempFood)
+				if errMsg != nil {
+					log.Println(errMsg)
+				}
+				//fmt.Fprintf(w, "%s\n%s\n%s\n%s\n%.1f", tempFood.Barcode, tempFood.Name, tempFood.Ingredients, tempFood.Grade, tempFood.NumGrade)
+
+				// Get all the ingredient information
+				var tempList []Ingredient
+				item := tempFood.Ingredients
+				items := strings.Split(item, ",")
+
+				// Create printing object struct
+				var tempPage = FoodPage{tempFood, tempList}
+				for i := 0; i < len(items); i++ {
+					inName := items[i]
+					inName = strings.ToLower(inName)
+					inName = strings.Trim(inName, " ")
+
+					ingredStr := fmt.Sprintf("%sapi/ingredient/%s", root, inName)
+					inResp, inErr := http.Get(ingredStr)
+					if inErr != nil {
+						log.Println(1, i, inName, inErr)
+					}
+					defer inResp.Body.Close()
+					inBody, inErrors := ioutil.ReadAll(inResp.Body)
+					if inErrors != nil {
+						log.Println(2, inErrors)
+					}
+					var tempIngred Ingredient
+					inErrMsg := json.Unmarshal(inBody, &tempIngred)
+					if inErrMsg != nil {
+						log.Println(3, inErrMsg)
+					}
+					tempPage.Ingredients = append(tempPage.Ingredients, tempIngred)
+				}
+
+				// Now that we have our printing page, print it to the template
+				newT, e := template.ParseFiles("templates/food2.html")
+				if e != nil {
+					log.Println(e)
+				}
+				newT.Execute(w, tempPage)
+
 			}
-			fmt.Fprintf(w, "%s\n%s\n%s\n%s\n%.1f", tempFood.Barcode, tempFood.Name, tempFood.Ingredients, tempFood.Grade, tempFood.NumGrade)
+		} else if ok && len(vals[0]) == 0 {
+			// Block should be reached if barcode was not defined
+			errors = append(errors, "barcode must be defined as a numerical string|")
+		}
+		// If any errors exist, return an error code and message
+		if len(errors) > 0 && ok {
+			errorString := strings.Join(errors, "|")
+			http.Error(w, errorString, 400)
 		}
 	}
 }
@@ -184,9 +245,7 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 				allFound = false
 				recordMissingIngredient(tempIngred.Name)
 			} else {
-				if allFound {
-					total += tempIngred.Grade
-				}
+				total += tempIngred.Grade
 			}
 		}
 		var avgGrade = float64(total) / float64(len(list))
@@ -222,6 +281,8 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 func makeIngredient(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("templates/makeIngredient.html")
+		log.Println(t)
+		log.Println(1)
 		t.Execute(w, nil)
 	} else if r.Method == "POST" {
 		var errors []string
@@ -231,6 +292,9 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 		name := r.Form["name"][0]
 		grade := r.Form["grade"][0]
 
+		// Reserve html file
+		t, _ := template.ParseFiles("templates/makeIngredient.html")
+		t.Execute(w, nil)
 		//formatting stuff
 		name = strings.Trim(name, " ")
 		name = strings.ToLower(name)
@@ -256,7 +320,7 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 			errors = append(errors, "The grade must be an integer between -5 and 5, inclusive|")
 		}
 
-		// Check if the ingredient already exists in the database
+		// Check if the ingredient already exists
 		stmt, err := db.Prepare("select * from ingredients where title=?;")
 		if err != nil {
 			log.Println(err)
@@ -282,6 +346,8 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 			if er != nil {
 				log.Println(er)
 			}
+			succString := fmt.Sprintf("Ingredient %s created with grade %d", temp.Name, temp.Grade)
+			w.Write([]byte(succString))
 		} else {
 			errorString := strings.Join(errors, "|")
 			log.Println(errorString)
