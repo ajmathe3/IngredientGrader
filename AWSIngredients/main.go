@@ -254,81 +254,89 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 		t, _ := template.ParseFiles("templates/makeFood.html")
 		t.Execute(w, nil)
 
-		// Used to store the names of ingredients that are missing
-		var missingIngredients []string
+		if checkFoodExists(barcode) {
+			templ, err := template.ParseFiles("templates/dupeFood.html")
+			if err != nil {
+				log.Println("Dupe Food ", err)
+			}
+			templ.Execute(w, barcode)
+		} else {
+			// Used to store the names of ingredients that are missing
+			var missingIngredients []string
 
-		// Calculate Grade
-		list := strings.Split(ingred, ",")
-		var total int
-		var allFound = true
+			// Calculate Grade
+			list := strings.Split(ingred, ",")
+			var total int
+			var allFound = true
 
-		for i := 0; i < len(list); i++ {
-			oneIngred := list[i]
-			oneIngred = strings.Trim(oneIngred, " ")
-			oneIngred = strings.ToLower(oneIngred)
-			url := fmt.Sprintf("%sapi/ingredient/%s", root, oneIngred)
-			resp, err := http.Get(url)
+			for i := 0; i < len(list); i++ {
+				oneIngred := list[i]
+				oneIngred = strings.Trim(oneIngred, " ")
+				oneIngred = strings.ToLower(oneIngred)
+				url := fmt.Sprintf("%sapi/ingredient/%s", root, oneIngred)
+				resp, err := http.Get(url)
+				if err != nil {
+					log.Println(err)
+				}
+				body, er := ioutil.ReadAll(resp.Body)
+				if er != nil {
+					log.Println(er)
+				}
+
+				var tempIngred Ingredient
+				json.Unmarshal(body, &tempIngred)
+				log.Println(tempIngred)
+				if tempIngred.Grade == -10 {
+					total = 0
+					allFound = false
+					recordMissingIngredient(tempIngred.Name)
+					missingIngredients = append(missingIngredients, tempIngred.Name)
+				} else {
+					total += tempIngred.Grade
+				}
+			}
+			var avgGrade = float64(total) / float64(len(list))
+			var grade = "missing"
+			if allFound {
+				if avgGrade < -3 {
+					grade = "very bad"
+				} else if avgGrade < -1 {
+					grade = "bad"
+				} else if avgGrade < 1 {
+					grade = "neutral"
+				} else if avgGrade < 3 {
+					grade = "good"
+				} else if avgGrade < 5 {
+					grade = "very good"
+				}
+			}
+
+			// Create the food struct
+			var temp = Food{barcode, name, ingred, grade, avgGrade}
+			body, err := json.Marshal(temp)
+			str := fmt.Sprintf("%sapi/food", root)
 			if err != nil {
 				log.Println(err)
 			}
-			body, er := ioutil.ReadAll(resp.Body)
+			_, er := http.Post(str, "application/json", bytes.NewBuffer(body))
 			if er != nil {
 				log.Println(er)
 			}
 
-			var tempIngred Ingredient
-			json.Unmarshal(body, &tempIngred)
-			log.Println(tempIngred)
-			if tempIngred.Grade == -10 {
-				total = 0
-				allFound = false
-				recordMissingIngredient(tempIngred.Name)
-				missingIngredients = append(missingIngredients, tempIngred.Name)
+			// Print out error or success message depending on if there are missing ingredients
+			if len(missingIngredients) > 0 {
+				templ, err := template.ParseFiles("templates/missingIngredients.html")
+				if err != nil {
+					log.Println(err)
+				}
+				templ.Execute(w, missingIngredients)
 			} else {
-				total += tempIngred.Grade
+				templ, err := template.ParseFiles("templates/foodSuccess.html")
+				if err != nil {
+					log.Println("main.makeFood", err)
+				}
+				templ.Execute(w, temp)
 			}
-		}
-		var avgGrade = float64(total) / float64(len(list))
-		var grade = "missing"
-		if allFound {
-			if avgGrade < -3 {
-				grade = "very bad"
-			} else if avgGrade < -1 {
-				grade = "bad"
-			} else if avgGrade < 1 {
-				grade = "neutral"
-			} else if avgGrade < 3 {
-				grade = "good"
-			} else if avgGrade < 5 {
-				grade = "very good"
-			}
-		}
-
-		// Create the food struct
-		var temp = Food{barcode, name, ingred, grade, avgGrade}
-		body, err := json.Marshal(temp)
-		str := fmt.Sprintf("%sapi/food", root)
-		if err != nil {
-			log.Println(err)
-		}
-		_, er := http.Post(str, "application/json", bytes.NewBuffer(body))
-		if er != nil {
-			log.Println(er)
-		}
-
-		// Print out error or success message depending on if there are missing ingredients
-		if len(missingIngredients) > 0 {
-			templ, err := template.ParseFiles("templates/missingIngredients.html")
-			if err != nil {
-				log.Println(err)
-			}
-			templ.Execute(w, missingIngredients)
-		} else {
-			templ, err := template.ParseFiles("templates/foodSuccess.html")
-			if err != nil {
-				log.Println("main.makeFood", err)
-			}
-			templ.Execute(w, temp)
 		}
 	}
 }
@@ -578,6 +586,8 @@ func deleteIngredient(w http.ResponseWriter, r *http.Request) {
 
 }
 
+// HELPER FUNCTIONS
+
 // Function used to record the name of any ingredients not currently in the ingredients table
 func recordMissingIngredient(name string) {
 	stmt, err := db.Prepare("insert into missing values(?)")
@@ -585,6 +595,27 @@ func recordMissingIngredient(name string) {
 		log.Println(err)
 	}
 	stmt.Query(name)
+}
+
+func checkFoodExists(bar string) bool {
+	str := fmt.Sprintf("%sapi/food/%s", root, bar)
+	resp, err := http.Get(str)
+	if err != nil {
+		log.Println(err)
+	}
+	defer resp.Body.Close()
+	body, erros := ioutil.ReadAll(resp.Body)
+	if erros != nil {
+		log.Println("checkFoodExists: ", erros)
+	}
+
+	var tempFood Food
+	var exists = true
+	errMsg := json.Unmarshal(body, &tempFood)
+	if errMsg != nil {
+		exists = false
+	}
+	return exists
 }
 
 /* To Do
