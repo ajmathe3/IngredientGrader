@@ -71,7 +71,7 @@ func main() {
 	//endpoints for the api
 	router.HandleFunc("/api/food/{bar}", getFood).Methods("GET")
 	router.HandleFunc("/api/food/{bar}", updateFood).Methods("POST")
-	router.HandleFunc("/api/food/{bar}", deleteFood).Methods("DELETE")
+	router.HandleFunc("/api/food/delete/{bar}", deleteFood).Methods("POST")
 	router.HandleFunc("/api/food", getAllFoods).Methods("GET")
 	router.HandleFunc("/api/food", createFood).Methods("POST")
 	router.HandleFunc("/api/ingredient", createIngredient).Methods("POST")
@@ -518,7 +518,7 @@ func updateFood(w http.ResponseWriter, r *http.Request) {
 // Delete
 func deleteFood(w http.ResponseWriter, r *http.Request) {
 	w.Header().Set("Content-Type", "application/json")
-	stmt, err := db.Prepare("delete from food where bar=?")
+	stmt, err := db.Prepare("delete from food where barcode=?")
 	if err != nil {
 		log.Fatalln(err)
 	}
