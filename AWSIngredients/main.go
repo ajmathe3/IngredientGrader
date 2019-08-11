@@ -246,6 +246,12 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 		name := r.Form["name"][0]
 		ingred := strings.ToLower(r.Form["ingred"][0])
 
+		//Reprint the makeFood template
+		t, _ := template.ParseFiles("templates/makeFood.html")
+		t.Execute(w, nil)
+
+		// Used to store the names of ingredients that are missing
+		var missingIngredients []string
 		// Calculate Grade
 		list := strings.Split(ingred, ",")
 		var total int
@@ -271,6 +277,7 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 				total = 0
 				allFound = false
 				recordMissingIngredient(tempIngred.Name)
+				missingIngredients = append(missingIngredients, tempIngred.Name)
 			} else {
 				total += tempIngred.Grade
 			}
@@ -301,6 +308,21 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 		_, er := http.Post(str, "application/json", bytes.NewBuffer(body))
 		if er != nil {
 			log.Println(er)
+		}
+
+		// Print out error or success message depending on if there are missing ingredients
+		if len(missingIngredients) > 0 {
+			templ, err := template.ParseFiles("templates/missingIngredients.html")
+			if err != nil {
+				log.Println(err)
+			}
+			templ.Execute(w, missingIngredients)
+		} else {
+			templ, err := template.ParseFiles("templates/foodSuccess.html")
+			if err != nil {
+				log.Println("main.makeFood", err)
+			}
+			templ.Execute(w, temp)
 		}
 	}
 }
