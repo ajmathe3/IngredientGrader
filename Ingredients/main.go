@@ -55,6 +55,10 @@ func main() {
 	//Router to handle all routings
 	router := mux.NewRouter()
 
+	//serving external files
+	router.HandleFunc("/js/{fileName}", handleJS)
+	router.HandleFunc("images/{fileName}", handleImages)
+
 	//endpoints for web pages
 	router.HandleFunc("/food", handleFood)
 	router.HandleFunc("/about", handleAbout)
@@ -201,6 +205,20 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 			http.Error(w, errorString, 400)
 		}
 	}
+}
+
+func handleJS(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	file := vars["fileName"]
+	url := fmt.Sprintf("js/%s", file)
+	http.ServeFile(w, r, url)
+}
+
+func handleImages(w http.ResponseWriter, r *http.Request) {
+	vars := mux.Vars(r)
+	file := vars["fileName"]
+	url := fmt.Sprintf("images/%s", file)
+	http.ServeFile(w, r, url)
 }
 
 func handleAbout(w http.ResponseWriter, r *http.Request) {
