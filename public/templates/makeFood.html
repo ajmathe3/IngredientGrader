@@ -1,0 +1,29 @@
+<form method="post">
+    Enter Barcode: <input name="barcode" type="text"><br><br>
+    Enter Name: <input name="name" type="text"><br><br>
+    Enter Ingredients: <input name="ingred" type="text"><br><br>
+    <input type="submit" value="Create Food!">
+</form>
+
+{{if .HasErrors}}
+    <div id="alert-area">
+        {{range .PageErrors}}
+            <div class="alert alert-danger" role="alert">
+                {{.}}
+            </div>
+        {{end}}
+    </div>
+{{end}}
+
+{{if .Success}}
+    <div id="success-area">
+        <div class="alert alert-success" role="alert">
+            Successfully Created a Food!<br>
+            Barcode: {{.PageFood.Barcode}}<br> 
+            Name: {{.PageFood.Name}}<br> 
+            Ingredients: {{.PageFood.Ingredients}}<br>
+            Grade: {{.PageFood.Grade}}<br>
+            Score: {{.PageFood.NumGrade}}<br>
+        </div>
+    </div>
+{{end}}

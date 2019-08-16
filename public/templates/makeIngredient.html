@@ -1,0 +1,35 @@
+<form method="post">
+    <div class="form-group post-form" id="first-input">
+        <label for="name">Ingredient Name</label>
+        <input type="text" class="form-control" id="name" name="name" placeholder="Enter Ingredient Name">
+    </div>
+    <div class="form-group post-form">
+        <label for="grade">Grade</label>
+        <input type="text" class="form-control" id="grade" name="grade" placeholder="-5 to 5, inclusive">
+    </div>
+    <div class=post-form>
+        <button type="submit" class="btn btn-primary">Create Ingredient</button>
+    </div>
+</form>
+
+{{if .HasErrors}}
+    <div id="alert-area">
+        {{range .PageErrors}}
+            <div class="alert alert-danger" role="alert">
+                {{.}}
+            </div>
+        {{end}}
+    </div>
+{{end}}
+
+{{if .Success}}
+    <div id="success-area">
+        {{range .PageIngredients}}
+        <div class="alert alert-success" role="alert">
+            Successfully Created an Ingredient!<br>
+            Name: {{.Name}}<br> 
+            Grade: {{.Grade}}<br>
+        </div>
+        {{end}}
+    </div>
+{{end}}
