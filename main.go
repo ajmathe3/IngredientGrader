@@ -30,12 +30,11 @@ func testRouter(w http.ResponseWriter, t *http.Request) {
 /* To Do
 Add restrictions that limit who can use admin pages and api
 SQL Injection protection
-Set DB password to env variable and use that rather than hardcoding
-Implement and test update/delete methods for ingredients and food
+Implement api for public consumption
 Periodically extract all foods with grade 'missing' to recalculate grade, OR do so every time an
 	ingredient is added to the database
 When printing to a table for /food, make the header printing better
-Edit response templates so that only a single file is being served in a single function call
+Admin functionality to alter database without needing to check DB itself
 
 Edge Cases
 	Fix the number of sig figs when printing the grade to a table
