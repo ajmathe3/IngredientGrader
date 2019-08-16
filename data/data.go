@@ -2,6 +2,9 @@ package data
 
 import (
 	"database/sql"
+	"fmt"
+	"os"
+
 	_ "github.com/go-sql-driver/mysql"
 )
 
@@ -82,7 +85,8 @@ var DB *sql.DB
 */
 func Init() error {
 	// First open the connection
-	tempdb, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/foodstuff")
+	creds := fmt.Sprintf("%s:%s@%s", os.Getenv("GRADER_USER"), os.Getenv("GRADER_PASS"), os.Getenv("GRADER_LOC"))
+	tempdb, err := sql.Open("mysql", creds)
 	if err != nil {
 		return err
 	}
