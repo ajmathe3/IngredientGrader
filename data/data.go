@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"os"
 
+	// To prevent this from escaping
 	_ "github.com/go-sql-driver/mysql"
 )
 
