@@ -29,8 +29,23 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		t.ExecuteTemplate(w, "layout", nil)
 		return
 	}
-	// Validate login, Generate Cookie and bind, Redirect to landing
 
+	r.ParseForm()
+	pass := []byte(r.Form.Get("pass"))
+	user := r.Form.Get("user")
+
+	dbHash := server.GetHashedPassword(user)
+	if user == "" {
+		fmt.Fprintln(w, "No username")
+		return
+	}
+
+	
+	if !server.PasswordMatch([]byte(dbHash), pass) {
+		fmt.Fprintln(w, "Password incorrect")
+		return; 
+	}
+	fmt.Fprintln(w, "Login success!")
 }
 
 // HandleFood is the page handler for the Search Food (/food) page

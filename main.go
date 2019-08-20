@@ -3,7 +3,7 @@ package main
 import (
 	"IngredientGrader/data"
 	"IngredientGrader/routes"
-	"fmt"
+	"IngredientGrader/server"
 	"log"
 	"net/http"
 )
@@ -17,14 +17,12 @@ func main() {
 		log.Fatalln(dbError)
 	}
 
+	server.Init()
+
 	// Serve the website
 	if ServeErr := http.ListenAndServe(":8000", router); ServeErr != nil {
 		log.Fatalln(ServeErr)
 	}
-}
-
-func testRouter(w http.ResponseWriter, t *http.Request) {
-	fmt.Fprintf(w, "Hello World")
 }
 
 /* To Do
@@ -39,7 +37,7 @@ Admin functionality to alter database without needing to check DB itself
 Double Check
 	Whether router can be constructed in InitRoutes and returned
 	Replace AddParseTree with parsing multiple files with ParseFiles(), add define content
-	Restrict HTTP request types for routes	
+	Restrict HTTP request types for routes
 
 Edge Cases
 	Fix the number of sig figs when printing the grade to a table
