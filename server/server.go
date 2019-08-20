@@ -2,11 +2,12 @@ package server
 
 import (
 	"IngredientGrader/data"
-	"database/sql"
 	"log"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
-var db *sql.DB
+var db = data.DB
 
 /* This package deals with server-side functions needed for the site
    to operate correctly.
@@ -20,9 +21,6 @@ var db *sql.DB
    barcode - The barcode associated with the food
 */
 func GetFood(barcode string) (data.Food, bool) {
-	if db == nil {
-		db = data.DB
-	}
 	// Create statement
 	stmt, err := db.Prepare("Select * from food where barcode=?;")
 	if err != nil {
@@ -60,9 +58,6 @@ func GetFood(barcode string) (data.Food, bool) {
    avgGrade - The average numerical grade of the food being added
 */
 func CreateFood(barcode, name, ingredients, grade string, avgGrade float64) {
-	if db == nil {
-		db = data.DB
-	}
 	stmt, err := db.Prepare("insert into food values(?, ?, ?, ?, ?)")
 	if err != nil {
 		log.Fatalln("server.CreateFood: ", err)
@@ -81,9 +76,6 @@ func CreateFood(barcode, name, ingredients, grade string, avgGrade float64) {
    name - The name of the ingredient being retrieved
 */
 func GetIngredient(name string) data.Ingredient {
-	if db == nil {
-		db = data.DB
-	}
 	// Create sql statement
 	stmt, err := db.Prepare("select grade from ingredients where title=?;")
 	if err != nil {
@@ -121,9 +113,6 @@ func GetIngredient(name string) data.Ingredient {
    grade - The grade of the ingredient, -5 to 5 inclusive integer
 */
 func CreateIngredient(name string, grade int) {
-	if db == nil {
-		db = data.DB
-	}
 	// Set up DB Query
 	stmt, err := db.Prepare("insert into ingredients values(?, ?);")
 	if err != nil {
@@ -141,12 +130,65 @@ func CreateIngredient(name string, grade int) {
    name - THe name of the ingredient missing from the database
 */
 func RecordMissingIngredient(name string) {
-	if db == nil {
-		db = data.DB
-	}
 	stmt, err := db.Prepare("insert into missing values(?)")
 	if err != nil {
 		log.Println(err)
 	}
 	stmt.Query(name)
+}
+
+// Obfuscate hashes and salts a potential password. This can be used for both
+/* logging in and registering an account, as writing the hash to database is
+   not done with this function
+   pass - The byte slice equivalent of the string password
+   return - Returns the hashed and salted password as a string
+*/
+func Obfuscate(pass []byte) string {
+	hash, err := bcrypt.GenerateFromPassword(pass, bcrypt.DefaultCost)
+	if err != nil {
+		log.Println("Obfuscate: ", err)
+	}
+	return string(hash)
+}
+
+// GetHashedPassword retrieves a salted and hashed password with a matching
+/* username from the database. In the scenario that there is no matching
+   username, an empty string is returned
+   username - the username associated with the password
+   return - the salted and hashed password associated with the username
+*/
+func GetHashedPassword(username string) string {
+	db = data.DB
+	stmt, err := db.Prepare("select hashedPass from users where username=?;")
+	if err != nil {
+		log.Println("getHashedPassword: ", err)
+	}
+
+	sel, err := stmt.Query(username)
+	if err != nil {
+		log.Println("getHashedPassword/Query: ", err)
+	}
+
+	var pass string
+	if sel.Next() {
+		sel.Scan(&pass)
+		return pass
+	}
+	return ""
+}
+
+// PasswordMatch checks if the hash is equivalent to the password
+func PasswordMatch(hash, pass []byte) bool {
+	err := bcrypt.CompareHashAndPassword(hash, pass)
+	if err != nil {
+		return false
+	}
+	return true
+}
+
+// Init initializes the db field of the server package. Can only be
+/* called after calling data.Init
+ */
+func Init() {
+	db = data.DB
 }
