@@ -1,0 +1,43 @@
+<form method="get">
+    <div class="form-group form-padding">
+        <label for="barcode">Enter Barcode</label>
+        <input class="form-control" name="barcode" id="barcode" type="text" placeholder="Barcode">
+    </div>
+    <div class="form-padding">
+        <input type="submit" value="Get Data"  class="btn btn-primary btn-block form-padding">
+    </div>
+</form>
+
+
+{{if .HasErrors}}
+    <div id="alert-area">
+        {{range .PageErrors}}
+            <div class="alert alert-danger" role="alert">
+                {{.}}
+            </div>
+        {{end}}
+    </div>
+{{end}}
+
+{{if .Success}}
+    <h1>{{.PageFood.Name}} Grade: {{.PageFood.NumGrade}}/5 ({{.PageFood.Grade}})</h1>
+
+    <table class="table">
+        <thead>
+            <tr>
+                <th id="name">Name</td>
+                <th id="grade">Grade</td>
+            </tr>
+        </thead>
+
+        <tbody id="ingredTable">
+        {{range .PageIngredients}}
+            <tr class="rowEntry">
+                <td class="name">{{.Name}}</td>
+                <td class="grade">{{.Grade}}</td>
+            </tr>
+        {{end}}
+        </tbody>
+</table>
+<script src="public/js/food.js" type="text/javascript"></script> 
+{{end}}

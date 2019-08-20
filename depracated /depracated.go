@@ -1,8 +1,6 @@
-package main
+package depracted
 
-import (
-	"bytes"
-	"database/sql"
+/*import (
 	"encoding/json"
 	"fmt"
 	"html/template"
@@ -11,121 +9,9 @@ import (
 	"net/http"
 	"strconv"
 	"strings"
-
-	_ "github.com/go-sql-driver/mysql"
-	"github.com/gorilla/mux"
 )
 
-// DB is s typing of sql.DB to allow readability of code
-type DB sql.DB
-
-// Food is a typed struct that is used to decode and encode
-// data for http requests
-type Food struct {
-	Barcode     string  `json:"barcode"`
-	Name        string  `json:"title"`
-	Ingredients string  `json:"ingredients"`
-	Grade       string  `json:"grade"`
-	NumGrade    float64 `json:"numgrade"`
-}
-
-// Ingredient is a typed struct that is used to decode and
-// encode data for http requests
-type Ingredient struct {
-	Name  string `json:"title"`
-	Grade int    `json:"grade"`
-}
-
-// FoodPage To print out both the Food Data and Ingredient Data on the
-// /food page, a specialized struct will be defined for it
-type FoodPage struct {
-	AFood       Food         `json:"food"`
-	Ingredients []Ingredient `json:"ingredients"`
-}
-
-// Implements http.Handler to allow for custom 404 error page
-type foo int
-
-// Allows for dynamic absolute addresses when testing/deploying
-var root = "http://localhost:8000/"
-
-var db *sql.DB
-
-func main() {
-	//Router to handle all routings
-	router := mux.NewRouter()
-
-	//serving external files
-	router.HandleFunc("/js/{fileName}", handleJS)
-	router.HandleFunc("images/{fileName}", handleImages)
-
-	//endpoints for web pages
-	router.HandleFunc("/food", handleFood)
-	router.HandleFunc("/about", handleAbout)
-	router.HandleFunc("/", landingFunc)
-
-	//endpoints for admin pages
-	router.HandleFunc("/admin/food/create", makeFood)
-	router.HandleFunc("/admin/ingredient/create", makeIngredient)
-
-	//endpoints for the api
-	router.HandleFunc("/api/food/{bar}", getFood).Methods("GET")
-	router.HandleFunc("/api/food/{bar}", updateFood).Methods("POST")
-	router.HandleFunc("/api/food/delete/{bar}", deleteFood).Methods("POST")
-	router.HandleFunc("/api/food", getAllFoods).Methods("GET")
-	router.HandleFunc("/api/food", createFood).Methods("POST")
-	router.HandleFunc("/api/ingredient", createIngredient).Methods("POST")
-	router.HandleFunc("/api/ingredient/{name}", getIngredient).Methods("GET")
-
-	//custom 404 page
-	var m foo
-	router.NotFoundHandler = m
-	// Open and Test DB connection
-	openConn()
-
-	if err := http.ListenAndServe(":8000", router); err != nil {
-		log.Fatalln(err)
-	}
-}
-
-/* Opens a connection to the database and checks if the connection is working */
-func openConn() error {
-	if db == nil {
-		tempdb, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/foodstuff")
-		if err != nil {
-			return err
-		}
-		db = tempdb
-		err = db.Ping()
-		if err != nil {
-			log.Fatalln(err)
-		}
-		return nil
-
-	}
-	log.Println("db already defined")
-	err := db.Ping()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	return nil
-}
-
-// PUBLIC WEB PAGES
-
-/* Creates a custom 404 error page */
-func (m foo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("templates/notFound.html")
-	t.Execute(w, nil)
-}
-
-/* Handler function for the landing page of the site */
-func landingFunc(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("templates/index2.html")
-	t.Execute(w, nil)
-}
-
-/* Retrieves food info from the database. Current implementation writes data to page */
+// Retrieves food info from the database. Current implementation writes data to page
 func handleFood(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		vals, ok := r.URL.Query()["barcode"]
@@ -219,27 +105,29 @@ func handleFood(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func handleJS(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file := vars["fileName"]
-	url := fmt.Sprintf("js/%s", file)
-	http.ServeFile(w, r, url)
+
+
+
+
+
+func landingFunc(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("templates/index2.html")
+	t.Execute(w, nil)
 }
 
-func handleImages(w http.ResponseWriter, r *http.Request) {
-	vars := mux.Vars(r)
-	file := vars["fileName"]
-	url := fmt.Sprintf("images/%s", file)
-	http.ServeFile(w, r, url)
-}
+
+
+
 
 func handleAbout(w http.ResponseWriter, r *http.Request) {
 	t, _ := template.ParseFiles("templates/about.html")
 	t.Execute(w, nil)
 }
 
-// ADMIN PAGES
-/* Admin page. Allows for food to be added to the database */
+
+
+
+
 func makeFood(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("templates/makeFood.html")
@@ -341,6 +229,11 @@ func makeFood(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+
+
+
+
+
 func makeIngredient(w http.ResponseWriter, r *http.Request) {
 	if r.Method == "GET" {
 		t, _ := template.ParseFiles("templates/makeIngredient.html")
@@ -419,173 +312,64 @@ func makeIngredient(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-// REST API handlers
-// CRUD Operations Controllers - Food
-func getAllFoods(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	stmt, err := db.Prepare("Select * from food;")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	sel, err := stmt.Query()
-	if err != nil {
-		log.Fatalln(err)
-	}
-	for sel.Next() {
-		var (
-			bar      string
-			name     string
-			ins      string
-			grade    string
-			numgrade float64
-		)
-		sel.Scan(&bar, &name, &ins, &grade, &numgrade)
-		var f = Food{bar, name, ins, grade, numgrade}
-		json.NewEncoder(w).Encode(f)
-	}
-}
 
-// Create - Current implentation allows for a single creation per call
-func createFood(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	var newFood Food
-	json.NewDecoder(r.Body).Decode(&newFood)
-	log.Println(newFood)
-	// Set up DB query
-	stmt, err := db.Prepare("insert into food values(?, ?, ?, ?, ?)")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	// Fire query string
-	_, err = stmt.Query(newFood.Barcode, newFood.Name, newFood.Ingredients, newFood.Grade, newFood.NumGrade)
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
 
-// Read
-func getFood(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	stmt, err := db.Prepare("Select * from food where barcode=?;")
-	if err != nil {
-		log.Fatalln(err)
-	}
+
+
+func handleJS(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sel, err := stmt.Query(vars["bar"])
-	if err != nil {
-		log.Fatalln(err)
-	}
-	for sel.Next() {
-		var (
-			bar      string
-			name     string
-			ins      string
-			grade    string
-			numgrade float64
-		)
-		sel.Scan(&bar, &name, &ins, &grade, &numgrade)
-		var f = Food{bar, name, ins, grade, numgrade}
-		json.NewEncoder(w).Encode(f)
-	}
+	file := vars["fileName"]
+	url := fmt.Sprintf("js/%s", file)
+	http.ServeFile(w, r, url)
 }
 
-// Update
-func updateFood(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	stmt, err := db.Prepare("Select * from food where barcode=?;")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	rem, err := db.Prepare("update food set title=?, ingredients=?, grade=?, numgrade=? where barcode=?;")
-	if err != nil {
-		log.Fatalln(err)
-	}
+func handleImages(w http.ResponseWriter, r *http.Request) {
 	vars := mux.Vars(r)
-	sel, err := stmt.Query(vars["bar"])
-	var (
-		bar      string
-		name     string
-		ins      string
-		grade    string
-		numgrade float64
-	)
-
-	sel.Scan(&bar, &name, &ins, &grade, &numgrade)
-	rem.Query(name, ins, grade, numgrade, bar)
-	var f = Food{bar, name, ins, grade, numgrade}
-	json.NewEncoder(w).Encode(f)
+	file := vars["fileName"]
+	url := fmt.Sprintf("images/%s", file)
+	http.ServeFile(w, r, url)
 }
 
-// Delete
-func deleteFood(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	stmt, err := db.Prepare("delete from food where barcode=?")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	vars := mux.Vars(r)
-	stmt.Query(vars["bar"])
-}
 
-// CRUD Operation Controllers - Ingredients
 
-// Create
-func createIngredient(w http.ResponseWriter, r *http.Request) {
-	// Set headers
-	w.Header().Set("Content-Type", "application/json")
-	// Get ingredient data from http request
-	var newIngred Ingredient
-	json.NewDecoder(r.Body).Decode(&newIngred)
 
-	// Set up DB Query
-	stmt, err := db.Prepare("insert into ingredients values(?, ?);")
-	if err != nil {
-		log.Fatalln(err)
-	}
-	_, err = stmt.Query(newIngred.Name, newIngred.Grade)
-	if err != nil {
-		log.Fatalln(err)
-	}
-}
 
-// Read
-func getIngredient(w http.ResponseWriter, r *http.Request) {
-	w.Header().Set("Content-Type", "application/json")
-	stmt, err := db.Prepare("select grade from ingredients where title=?;")
-	if err != nil {
-		log.Println(err)
-	}
 
-	vars := mux.Vars(r)
-	sel, err := stmt.Query(vars["name"])
-	if err != nil {
-		log.Fatalln(err)
-	}
-	var (
-		grade int
-	)
-	if sel.Next() {
-		sel.Scan(&grade)
+func openConn() error {
+	if db == nil {
+		tempdb, err := sql.Open("mysql", "root:root@tcp(127.0.0.1:3306)/foodstuff")
 		if err != nil {
-			log.Println(err)
+			return err
 		}
-		var i = Ingredient{vars["name"], grade}
-		json.NewEncoder(w).Encode(i)
-	} else {
-		var i = Ingredient{vars["name"], -10}
-		json.NewEncoder(w).Encode(i)
+		db = tempdb
+		err = db.Ping()
+		if err != nil {
+			log.Fatalln(err)
+		}
+		return nil
+
 	}
+	log.Println("db already defined")
+	err := db.Ping()
+	if err != nil {
+		log.Fatalln(err)
+	}
+	return nil
 }
 
-// Update
-func updateIngredient(w http.ResponseWriter, r *http.Request) {
+// PUBLIC WEB PAGES
 
+Creates a custom 404 error page
+func (m foo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("templates/notFound.html")
+	t.Execute(w, nil)
 }
 
-// Delete
-func deleteIngredient(w http.ResponseWriter, r *http.Request) {
 
-}
+
+
+
+
 
 // HELPER FUNCTIONS
 
@@ -619,13 +403,43 @@ func checkFoodExists(bar string) bool {
 	return exists
 }
 
-/* To Do
-Add restrictions that limit who can use admin pages and api
-SQL Injection protection
-Implement and test update/delete methods for ingredients and food
-Periodically extract all foods with grade 'missing' to recalculate grade, OR do so every time an
-	ingredient is added to the database
 
-Edge Cases
-	DONE!!! (For now)
+// DB is s typing of sql.DB to allow readability of code
+type DB sql.DB
+
+// Ingredient is a typed struct that is used to decode and
+// encode data for http requests
+type Ingredient struct {
+	Name  string `json:"title"`
+	Grade int    `json:"grade"`
+}
+
+// FoodPage To print out both the Food Data and Ingredient Data on the
+// /food page, a specialized struct will be defined for it
+type FoodPage struct {
+	AFood       Food         `json:"food"`
+	Ingredients []Ingredient `json:"ingredients"`
+}
+
+
+
+
+
+//tempdb, err := sql.Open("mysql", "root:ihateeirs@tcp(127.0.0.1:3306)/foodstuff")
+
+
+
+// Implements http.Handler to allow for custom 404 error page
+type foo int
+
+// Allows for dynamic absolute addresses when testing/deploying
+var root = "http://localhost:8000/"
+
+var db *sql.DB
+
+
+
+
+
+
 */
