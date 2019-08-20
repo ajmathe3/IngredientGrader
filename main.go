@@ -36,6 +36,11 @@ Periodically extract all foods with grade 'missing' to recalculate grade, OR do 
 When printing to a table for /food, make the header printing better
 Admin functionality to alter database without needing to check DB itself
 
+Double Check
+	Whether router can be constructed in InitRoutes and returned
+	Replace AddParseTree with parsing multiple files with ParseFiles(), add define content
+	Restrict HTTP request types for routes	
+
 Edge Cases
 	Fix the number of sig figs when printing the grade to a table
 */

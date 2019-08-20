@@ -19,6 +19,7 @@ func InitRoutes() {
 	// Routes for public webpages
 	Router.HandleFunc("/food", handler.HandleFood)
 	Router.HandleFunc("/about", handler.HandleAbout)
+	Router.HandleFunc("/login", handler.HandleLogin)
 	Router.HandleFunc("/", handler.HandleLanding)
 
 	// Routes for Admin Pages

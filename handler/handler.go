@@ -17,6 +17,22 @@ import (
 
 var db = data.DB
 
+// HandleLogin is the page handler for the login page.
+/* The current iteration is just an empty skeleton. No validation
+   is done nor is are cookies generated
+*/
+func HandleLogin(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("public/templates/layout.html")
+	if r.Method == "GET" {
+		templ, _ := template.ParseFiles("public/templates/login.html")
+		t.AddParseTree("content", templ.Tree)
+		t.ExecuteTemplate(w, "layout", nil)
+		return
+	}
+	// Validate login, Generate Cookie and bind, Redirect to landing
+
+}
+
 // HandleFood is the page handler for the Search Food (/food) page
 /* The page requires a get variable named barcode.
    The page should return alerts if one of the following conditions
