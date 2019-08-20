@@ -27,6 +27,7 @@ func InitRoutes() {
 
 	// Routes for misc
 	Router.HandleFunc("/public/{dir}/{file}/", handler.HandlePublic)
+	Router.HandleFunc("/public/{dir}/{file}", handler.HandlePublic)
 	// Route for 404 Not Found
 	var i handler.Foo
 	Router.NotFoundHandler = i
