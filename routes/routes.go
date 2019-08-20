@@ -17,18 +17,18 @@ func InitRoutes() {
 	// Attach Routes
 
 	// Routes for public webpages
-	Router.HandleFunc("/food", handler.HandleFood)
-	Router.HandleFunc("/about", handler.HandleAbout)
-	Router.HandleFunc("/login", handler.HandleLogin)
-	Router.HandleFunc("/", handler.HandleLanding)
+	Router.HandleFunc("/food", handler.HandleFood).Methods("GET")
+	Router.HandleFunc("/about", handler.HandleAbout).Methods("GET")
+	Router.HandleFunc("/login", handler.HandleLogin).Methods("GET", "POST")
+	Router.HandleFunc("/", handler.HandleLanding).Methods("GET")
 
 	// Routes for Admin Pages
-	Router.HandleFunc("/admin/food/create", handler.MakeFood)
-	Router.HandleFunc("/admin/ingredient/create", handler.MakeIngredient)
+	Router.HandleFunc("/admin/food/create", handler.MakeFood).Methods("GET", "POST")
+	Router.HandleFunc("/admin/ingredient/create", handler.MakeIngredient).Methods("GET", "POST")
 
 	// Routes for misc
-	Router.HandleFunc("/public/{dir}/{file}/", handler.HandlePublic)
-	Router.HandleFunc("/public/{dir}/{file}", handler.HandlePublic)
+	Router.HandleFunc("/public/{dir}/{file}/", handler.HandlePublic).Methods("GET")
+	Router.HandleFunc("/public/{dir}/{file}", handler.HandlePublic).Methods("GET")
 	// Route for 404 Not Found
 	var i handler.Foo
 	Router.NotFoundHandler = i

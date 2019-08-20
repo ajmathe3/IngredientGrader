@@ -43,10 +43,6 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		with no assigned grades
 */
 func HandleFood(w http.ResponseWriter, r *http.Request) {
-	// This page can only handle get requests
-	if r.Method != "GET" {
-		return
-	}
 	// Load the layout
 	t, _ := template.ParseFiles("public/templates/layout.html")
 	// Now check if values can be parsed from the query string
@@ -129,10 +125,6 @@ func MakeFood(w http.ResponseWriter, r *http.Request) {
 		templ, _ := template.ParseFiles("public/templates/makeFood.html")
 		t.AddParseTree("content", templ.Tree)
 		t.ExecuteTemplate(w, "layout", c)
-		return
-	}
-	// If the code executes this, then an illegal http method was used
-	if r.Method != "POST" {
 		return
 	}
 
@@ -219,9 +211,6 @@ func MakeIngredient(w http.ResponseWriter, r *http.Request) {
 		templ, _ := template.ParseFiles("public/templates/makeIngredient.html")
 		t.AddParseTree("content", templ.Tree)
 		t.ExecuteTemplate(w, "layout", c)
-		return
-	}
-	if r.Method != "POST" {
 		return
 	}
 
