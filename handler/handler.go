@@ -22,6 +22,7 @@ var db = data.DB
    is done nor is are cookies generated
 */
 func HandleLogin(w http.ResponseWriter, r *http.Request) {
+	// Serve the actual login page
 	t, _ := template.ParseFiles("public/templates/layout.html")
 	if r.Method == "GET" {
 		templ, _ := template.ParseFiles("public/templates/login.html")
@@ -29,23 +30,35 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 		t.ExecuteTemplate(w, "layout", nil)
 		return
 	}
+	// If this point is reached, then the form was submitted via post request. Create
+	// content struct for template purposes
+	var content data.Content
+	c := &content
+	c.Source = "HandleLogin"
 
+	// Add the inner template for printing purposes. Only used if there is an error
+	templ, _ := template.ParseFiles("public/templates/login.html")
+	t.AddParseTree("content", templ.Tree)
+	// Parse the form, and retrieve the imbedded username and password
 	r.ParseForm()
 	pass := []byte(r.Form.Get("pass"))
 	user := r.Form.Get("user")
 
+	// Check if the username has an associated hashed password. If not, then username does not
+	// exist in db
 	dbHash := server.GetHashedPassword(user)
-	if user == "" {
-		fmt.Fprintln(w, "No username")
+	if dbHash == "" {
+		c.AddError("Username does not exist within the database")
+		t.ExecuteTemplate(w, "layout", c)
 		return
 	}
 
-	
 	if !server.PasswordMatch([]byte(dbHash), pass) {
-		fmt.Fprintln(w, "Password incorrect")
-		return; 
+		c.AddError("Either the username or password is incorrect")
+		t.ExecuteTemplate(w, "layout", c)
+		return
 	}
-	fmt.Fprintln(w, "Login success!")
+	http.Redirect(w, r, "/food", http.StatusSeeOther)
 }
 
 // HandleFood is the page handler for the Search Food (/food) page

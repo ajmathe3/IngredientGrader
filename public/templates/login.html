@@ -11,3 +11,11 @@
         <input type="submit" value="Login"  class="btn btn-primary btn-block form-padding">
     </div>
 </form>
+
+{{if .HasErrors}}
+    {{range .PageErrors}}
+        <div class="alert alert-danger" role="alert">
+            {{.}}
+        </div>
+    {{end}}
+{{end}} 
