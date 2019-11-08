@@ -3,6 +3,7 @@ package server
 import (
 	"IngredientGrader/data"
 	"log"
+	"strings"
 
 	"golang.org/x/crypto/bcrypt"
 )
@@ -184,6 +185,68 @@ func PasswordMatch(hash, pass []byte) bool {
 		return false
 	}
 	return true
+}
+
+// ValidateRegistration does the following:
+/* Checks if the potential username is valid
+      Rules: At least 5 characters, no more than 20 characters.
+   Checks if the potential password is valid
+	  Rules: At least 8 characters, no more than 40 characters. Must contain at least 1
+	  uppercase letter, 1 lower case letter, and 1 number
+   user - The potential username for the account
+   pass - The potential password for the account
+   confirmPass - Used to check if the password was entered correctly. Must equal pass
+   c - Page Content Struct. Used to store errors if any fields are invalid
+   return bool - True if the user and pass are valid
+*/
+func ValidateRegistration(user, pass, confirmPass string, c *data.Content) bool {
+	if pass != confirmPass {
+		c.AddError("Passwords do not match")
+	}
+	//Validate that the username has all requirements
+	hasLengthUser := len(pass) >= 5 && len(pass) <= 20
+
+	if !hasLengthUser {
+		c.AddError("Username is invalid")
+	}
+	// Validate that the password has all requirements
+	hasUpper := strings.ContainsAny(pass, "ABCDEFGHIJKLMNOPQRSTUVWXYZ")
+	hasLower := strings.ContainsAny(pass, "abcdefghijklmnopqrstuvwxyz")
+	hasNum := strings.ContainsAny(pass, "1234567890")
+	hasLength := len(pass) >= 8 && len(pass) <= 40
+
+	if !(hasUpper && hasLower && hasNum && hasLength) {
+		c.AddError("Password is invalid")
+	}
+
+	// Check if the username already exists
+	stmt, err := db.Prepare("select * from users where username=?")
+	if err != nil {
+		log.Println("server.ValidateRegisterAccount: ", err)
+	}
+	sel, err := stmt.Query(user)
+	if err != nil {
+		log.Println("server.ValidateRegistration: ", err)
+	}
+	if sel != nil {
+		c.AddError("Username is already in use")
+	}
+
+	if c.HasErrors() {
+		return false
+	}
+	return true
+}
+
+// RegisterAccount adds the login credentials of the user to the database. The password
+/* passed to the function is expected to be unhashed
+ */
+func RegisterAccount(user, pass string) {
+	stmt, err := db.Prepare("insert into users values(?, ?)")
+	if err != nil {
+		log.Println("server.RegisterAccount: ", err)
+	}
+	stmt.Query(user, Obfuscate([]byte(pass)))
 }
 
 // Init initializes the db field of the server package. Can only be

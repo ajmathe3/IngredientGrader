@@ -1,0 +1,31 @@
+<form method="post">
+    <div class="form-group form-padding">
+        <label for="user">Enter Username</label>
+        <input class="form-control" name="user" id="user" type="text" placeholder="Username">
+    </div>
+    <div class="form-group form-padding">
+        <label for="pass">Enter Password</label>
+        <input class="form-control" name="pass" id="pass" type="password" placeholder="Password">
+    </div>
+    <div class="form-group form-padding">
+            <label for="confirmPass">Confirm Password</label>
+            <input class="form-control" name="confirmPass" id="confirmPass" type="password" placeholder="Password">
+    </div>
+    <div class="form-padding">
+        <input type="submit" value="Register"  class="btn btn-primary btn-block form-padding">
+    </div>
+</form>
+    
+{{if .HasErrors}}
+    {{range .PageErrors}}
+        <div class="alert alert-danger" role="alert">
+            {{.}}
+        </div>
+    {{end}}
+{{end}} 
+
+{{if .Success}}
+        <div class="alert alert-success" role="alert">
+            Account Registered
+        </div>
+{{end}}

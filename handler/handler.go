@@ -61,6 +61,41 @@ func HandleLogin(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, "/food", http.StatusSeeOther)
 }
 
+// HandleRegister registers a user account to the database.
+func HandleRegister(w http.ResponseWriter, r *http.Request) {
+	t, _ := template.ParseFiles("public/templates/layout.html")
+	templ, _ := template.ParseFiles("public/templates/register.html")
+	// This is only used if the page is being landed on, or there is an error
+	t.AddParseTree("content", templ.Tree)
+
+	// When the Register page is landed on, serve the register content
+	if r.Method == "GET" {
+		t.ExecuteTemplate(w, "layout", nil)
+		return
+	}
+
+	// Construct a Content struct and initialize content pointer for printing purposes
+	var content data.Content
+	c := &content
+	c.Source = "HandleRegister"
+
+	// If this point is reached, a POST request is being handled
+	r.ParseForm()
+	// Retrieve page form contents
+	user := r.Form.Get("user")
+	pass := r.Form.Get("pass")
+	confirmPass := r.Form.Get("confirmPass")
+
+	// Check if the username and password are valid for an account
+	valid := server.ValidateRegistration(user, pass, confirmPass, c)
+	if valid {
+		server.RegisterAccount(user, pass)
+		c.Success = true
+	}
+	t.ExecuteTemplate(w, "layout", c)
+
+}
+
 // HandleFood is the page handler for the Search Food (/food) page
 /* The page requires a get variable named barcode.
    The page should return alerts if one of the following conditions
@@ -338,6 +373,8 @@ type Foo int
 // ServeHTTP is part of an interface implemented by foo to allow
 // for 404 redirects
 func (m Foo) ServeHTTP(w http.ResponseWriter, r *http.Request) {
-	t, _ := template.ParseFiles("public/templates/notFound.html")
+	t, _ := template.ParseFiles("public/templates/layout.html")
+	templ, _ := template.ParseFiles("public/templates/notFound.html")
+	t.AddParseTree("content", templ.Tree)
 	t.Execute(w, nil)
 }

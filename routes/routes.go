@@ -21,6 +21,7 @@ func InitRoutes() {
 	Router.HandleFunc("/about", handler.HandleAbout).Methods("GET")
 	Router.HandleFunc("/login", handler.HandleLogin).Methods("GET", "POST")
 	Router.HandleFunc("/", handler.HandleLanding).Methods("GET")
+	Router.HandleFunc("/register", handler.HandleRegister).Methods("GET", "POST")
 
 	// Routes for Admin Pages
 	Router.HandleFunc("/admin/food/create", handler.MakeFood).Methods("GET", "POST")
